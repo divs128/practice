@@ -1,0 +1,132 @@
+import argparse
+import csv
+import json
+import os
+
+
+def get_params() -> dict:
+    parser = argparse.ArgumentParser(description='DataTest')
+    parser.add_argument('--customers_location', required=False, default="./input_data/starter/customers.csv")
+    parser.add_argument('--products_location', required=False, default="./input_data/starter/products.csv")
+    parser.add_argument('--transactions_location', required=False, default="./input_data/starter/transactions/")
+    parser.add_argument('--output_location', required=False, default="./output_data/outputs/")
+    return vars(parser.parse_args())
+
+
+def process_data(customers_location, products_location, transactions_location, output_location):
+    customers = read_customers(customers_location)
+    products = read_products(products_location)
+    transactions = read_transactions(transactions_location)
+
+    # Process the data and generate the output
+    output_data = generate_output(customers, products, transactions)
+
+    # Write the output JSON file
+    output_file = os.path.join(output_location, "output.json")
+    with open(output_file, mode="w") as file:
+        json.dump(output_data, file)
+
+
+def read_customers(customers_location):
+    customers = {}
+    with open(customers_location, mode="r") as file:
+        reader = csv.reader(file)
+        next(reader)  # Skip the header row
+        for row in reader:
+            customer_id, loyalty_score = row
+            customers[customer_id] = {"loyalty_score": int(loyalty_score)}
+    return customers
+
+
+def read_products(products_location):
+    products = {}
+    with open(products_location, mode="r") as file:
+        reader = csv.reader(file)
+        next(reader)  # Skip the header row
+        for row in reader:
+            product_id, product_description, product_category = row
+            products[product_id] = {
+                "product_description": product_description,
+                "product_category": product_category
+            }
+    return products
+
+
+def read_transactions(transactions_location):
+    transactions = []
+    for root, dirs, files in os.walk(transactions_location):
+        for file in files:
+            if file.endswith(".json"):
+                file_path = os.path.join(root, file)
+                with open(file_path, mode="r") as json_file:
+                    for line in json_file:
+                        transaction = json.loads(line)
+                        transactions.append(transaction)
+    return transactions
+
+
+def generate_output(customers, products, transactions):
+    output_data = []
+
+    # Create a dictionary to store the purchase count for each customer and product
+    purchase_count = {}
+
+    # Iterate over the transactions
+    for transaction in transactions:
+        customer_id = transaction["customer_id"]
+        basket = transaction["basket"]
+
+        # Update the purchase count for the customer
+        purchase_count.setdefault(customer_id, 0)
+        purchase_count[customer_id] += 1
+
+        # Iterate over the items in the basket
+        for item in basket:
+            product_id = item["product_id"]
+
+            # Update the purchase count for the product
+            purchase_count.setdefault(product_id, 0)
+            purchase_count[product_id] += 1
+
+    # Generate the output data
+    for customer_id, customer_info in customers.items():
+        loyalty_score = customer_info["loyalty_score"]
+        purchase_count_customer = purchase_count.get(customer_id, 0)
+
+        output_data.append({
+            "customer_id": customer_id,
+            "loyalty_score": loyalty_score,
+            "product_id": customer_id,
+            "product_category": "customer",
+            "purchase_count": purchase_count_customer
+        })
+
+    for product_id, product_info in products.items():
+        product_description = product_info["product_description"]
+        product_category = product_info["product_category"]
+        purchase_count_product = purchase_count.get(product_id, 0)
+
+        output_data.append({
+            "customer_id": product_id,
+            "loyalty_score": 0,
+            "product_id": product_id,
+            "product_description": product_description,
+            "product_category": product_category,
+            "purchase_count": purchase_count_product
+        })
+
+    return output_data
+
+
+def main():
+    params = get_params()
+    process_data(
+        params["customers_location"],
+        params["products_location"],
+        params["transactions_location"],
+        params["output_location"]
+    )
+
+
+if __name__ == '__main__':
+    main()
