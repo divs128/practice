@@ -1,0 +1,54 @@
+SQL SOLUTIONS :
+1. Which manufacturer's planes had most no of flights? And how many flights?
+SELECT pl.manufacturer, COUNT(*) AS num_flights
+FROM flights AS f
+JOIN planes AS pl ON f.tailnum = pl.tailnum
+GROUP BY pl.manufacturer
+ORDER BY num_flights DESC
+LIMIT 1;
+
+
+2. Which manufacturer's planes had most no of flying hours? And how many hours?
+SELECT pl.manufacturer, SUM(f.air_time) AS total_flying_hours
+FROM flights AS f
+JOIN planes AS pl ON f.tailnum = pl.tailnum
+GROUP BY pl.manufacturer
+ORDER BY total_flying_hours DESC
+LIMIT 1;
+
+
+3. Which plane flew the most number of hours? And how many hours?
+SELECT f.tailnum, SUM(f.air_time) AS total_flying_hours
+FROM flights AS f
+GROUP BY f.tailnum
+ORDER BY total_flying_hours DESC
+LIMIT 1;
+
+
+4. Which destination had most delay in flights?
+SELECT a.dest, AVG(f.arr_delay) AS avg_arrival_delay
+FROM flights AS f
+JOIN airports AS a ON f.dest = a.IATA_CODE
+GROUP BY a.dest
+ORDER BY avg_arrival_delay DESC
+LIMIT 1;
+
+
+5. Which manufactures planes had covered most distance? And how much distance?
+SELECT pl.manufacturer, SUM(f.distance) AS total_distance
+FROM flights AS f
+JOIN planes AS pl ON f.tailnum = pl.tailnum
+GROUP BY pl.manufacturer
+ORDER BY total_distance DESC
+LIMIT 1;
+
+
+6. Which airport had most flights on weekends?
+SELECT a.origin, COUNT(*) AS num_flights
+FROM flights AS f
+JOIN airports AS a ON f.origin = a.IATA_CODE
+WHERE strftime('%w', f.year || '-' || f.month || '-' || f.day) IN ('0', '6')
+GROUP BY a.origin
+ORDER BY num_flights DESC
+LIMIT 1;
+
